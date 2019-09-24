@@ -1,1 +1,1 @@
-# RGB-Maze
+#[ModKit Wiki](../../wiki)
