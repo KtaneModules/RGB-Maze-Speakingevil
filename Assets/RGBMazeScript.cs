@@ -1,6 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 public class RGBMazeScript : MonoBehaviour {
 
@@ -600,6 +602,7 @@ public class RGBMazeScript : MonoBehaviour {
                 mazecol.text = "R";
             }
             gridleds[8 * pos[0] + pos[1]].material = colours[8];
+            previousButton = 8 * pos[0] + pos[1];
             if (pos[0] > 0)
                 gridleds[8 * (pos[0] - 1) + pos[1]].material = colours[4];
             if (pos[1] > 0)
@@ -987,6 +990,7 @@ public class RGBMazeScript : MonoBehaviour {
             if (moduleSolved == false)
             {
                 gridleds[8 * pos[0] + pos[1]].material = colours[8];
+                previousButton = 8 * pos[0] + pos[1];
                 if (pos[0] > 0)
                     gridleds[8 * (pos[0] - 1) + pos[1]].material = colours[4];
                 if (pos[1] > 0)
@@ -1037,6 +1041,141 @@ public class RGBMazeScript : MonoBehaviour {
                 {
                     thing.text = string.Empty;
                 }
+            }
+        }
+    }
+
+    //twitch plays
+    private int previousButton;
+
+    private bool commandIsValid(string s)
+    {
+        char[] valids = { 'u', 'd', 'l', 'r', 'R', 'G', 'B' };
+        s = s.Replace(" ", "");
+        for(int i = 0; i < s.Length; i++)
+        {
+            if (!valids.Contains(s[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    #pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"!{0} start [Starts the module] | !{0} u/d/l/r [Moves in the specified direction] | !{0} R/G/B [Switches to the specified maze] | !{0} reset [Resets the module ENTIRELY] | Move and switch commands may be chained, for example '!{0} rdGuuRr'";
+    #pragma warning restore 414
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        if (Regex.IsMatch(command, @"^\s*start\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            yield return null;
+            if(firstmove == true)
+            {
+                gridbuttons[0].OnInteract();
+            }
+            else
+            {
+                yield return "sendtochaterror The module has already been started!";
+            }
+            yield break;
+        }
+        if (Regex.IsMatch(command, @"^\s*reset\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            yield return null;
+            Debug.LogFormat("[RGB Maze #{0}] Reset of module triggered! [TP]", moduleID);
+            for (int i = 0; i < gridleds.Length; i++)
+            {
+                gridleds[i].material = colours[0];
+            }
+            for (int i = 0; i < orientleds.Length; i++)
+            {
+                orientleds[i].material = colours[0];
+            }
+            for (int i = 0; i < framework.Length; i++)
+            {
+                framework[i].material = colours[8];
+            }
+            firstmove = true;
+            Start();
+            yield break;
+        }
+        if (commandIsValid(command) && firstmove == false)
+        {
+            yield return null;
+            string temp = "";
+            temp = command.Replace(" ", "");
+            for(int i = 0; i < temp.Length; i++)
+            {
+                if (temp[i].Equals('u'))
+                {
+                    if((previousButton-8) < 0)
+                    {
+                        yield break;
+                    }
+                    else
+                    {
+                        gridbuttons[previousButton - 8].OnInteract();
+                    }
+                }
+                else if (temp[i].Equals('d'))
+                {
+                    if ((previousButton + 8) > 63)
+                    {
+                        yield break;
+                    }
+                    else
+                    {
+                        gridbuttons[previousButton + 8].OnInteract();
+                    }
+                }
+                else if (temp[i].Equals('l'))
+                {
+                    if (((previousButton % 8) - 1) < 0)
+                    {
+                        yield break;
+                    }
+                    else
+                    {
+                        gridbuttons[previousButton - 1].OnInteract();
+                    }
+                }
+                else if (temp[i].Equals('r'))
+                {
+                    if (((previousButton % 8) + 1) > 7)
+                    {
+                        yield break;
+                    }
+                    else
+                    {
+                        gridbuttons[previousButton + 1].OnInteract();
+                    }
+                }
+                else if (temp[i].Equals('R'))
+                {
+                    while(currentcol != 0)
+                    {
+                        gridbuttons[previousButton].OnInteract();
+                        yield return new WaitForSeconds(0.1f);
+                    }
+                }
+                else if (temp[i].Equals('G'))
+                {
+                    while (currentcol != 1)
+                    {
+                        gridbuttons[previousButton].OnInteract();
+                        yield return new WaitForSeconds(0.1f);
+                    }
+                }
+                else if (temp[i].Equals('B'))
+                {
+                    while (currentcol != 2)
+                    {
+                        gridbuttons[previousButton].OnInteract();
+                        yield return new WaitForSeconds(0.1f);
+                    }
+                }
+                yield return new WaitForSeconds(0.1f);
             }
         }
     }
